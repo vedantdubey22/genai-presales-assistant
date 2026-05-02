@@ -86,6 +86,19 @@ llm_client = None
 session_mgr: Optional[SessionManager] = None
 
 
+def ensure_app_directories():
+    """Create dirs SQLite, CSV dumps, FAISS, and logs need (Docker/Railway often has no empty data/)."""
+    db_dir = os.path.dirname(os.path.abspath(settings.database_path))
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
+    os.makedirs("data/raw", exist_ok=True)
+    os.makedirs("data/processed", exist_ok=True)
+    vdir = os.path.dirname(os.path.abspath(settings.vector_store_path))
+    if vdir:
+        os.makedirs(vdir, exist_ok=True)
+    os.makedirs("logs", exist_ok=True)
+
+
 def initialize_components():
     """Initialize all components"""
     global db_manager, sql_agent, rag_pipeline, orchestrator, llm_client, session_mgr
@@ -133,11 +146,17 @@ def initialize_components():
         return False
 
 
-def setup_database_and_data():
+def setup_database_and_data(
+    num_customers: int = 100,
+    num_products: int = 50,
+    num_deals: int = 200,
+    num_activities: int = 500,
+):
     """Setup database and generate synthetic data"""
     try:
         logger.info("Setting up database...")
-        
+        ensure_app_directories()
+
         # Create schema
         db_manager.create_schema()
         
@@ -151,11 +170,11 @@ def setup_database_and_data():
             
             generator = CRMDataGenerator()
             files = generator.generate_all_data(
-                num_customers=100,
-                num_products=50,
-                num_deals=200,
-                num_activities=500,
-                output_dir="data/raw"
+                num_customers=num_customers,
+                num_products=num_products,
+                num_deals=num_deals,
+                num_activities=num_activities,
+                output_dir="data/raw",
             )
             
             # Load data into database
@@ -177,7 +196,8 @@ def setup_database_and_data():
 async def startup_event():
     """Initialize the application on startup"""
     logger.info("Starting GenAI Pre-Sales Assistant API...")
-    
+    ensure_app_directories()
+
     # Initialize components
     if not initialize_components():
         logger.error("Failed to initialize components")
@@ -261,8 +281,13 @@ async def initialize_system(request: InitializeRequest, background_tasks: Backgr
     """Initialize the system with optional data generation"""
     try:
         if request.generate_data:
-            # Run data generation in background
-            background_tasks.add_task(setup_database_and_data)
+            background_tasks.add_task(
+                setup_database_and_data,
+                request.num_customers,
+                request.num_products,
+                request.num_deals,
+                request.num_activities,
+            )
             return {"message": "System initialization started in background"}
         else:
             # Just initialize components

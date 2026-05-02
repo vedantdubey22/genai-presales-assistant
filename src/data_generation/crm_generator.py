@@ -7,6 +7,7 @@ using LLM-powered data generation with proper constraints and business logic.
 
 import csv
 import json
+import os
 import random
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
@@ -210,6 +211,9 @@ class CRMDataGenerator:
             return
         
         df = pd.DataFrame(data)
+        out_dir = os.path.dirname(os.path.abspath(filename))
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
         df.to_csv(filename, index=False)
         logger.info(f"Saved {len(data)} records to {filename}")
     
