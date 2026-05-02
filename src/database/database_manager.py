@@ -252,7 +252,8 @@ class DatabaseManager:
         import re
         for pattern in forbidden_patterns:
             if re.search(pattern, query_upper):
-                return False, f"Query contains forbidden operation: {pattern.strip('\\b')}"
+                friendly = pattern.replace(r"\b", "")
+                return False, f"Query contains forbidden operation: {friendly}"
         
         # Validate aggregation consistency
         aggregation_validation = self._validate_aggregation_consistency(query)
