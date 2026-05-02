@@ -315,13 +315,16 @@ async def chat(request: ChatRequest):
         cached = session_mgr.get_cached_result(request.query)
         if cached is not None:
             logger.info(f"Returning cached result for session {session.session_id}")
-            cached["session_id"] = session.session_id
+            payload = dict(cached)
+            payload["session_id"] = session.session_id
+            if not payload.get("response") and payload.get("summary"):
+                payload["response"] = payload["summary"]
             session.add_user_message(request.query)
             session.add_assistant_message(
-                cached.get("summary") or cached.get("response", ""),
-                cached.get("query_type", ""),
+                payload.get("summary") or payload.get("response", ""),
+                payload.get("query_type", ""),
             )
-            return ChatResponse(**cached)
+            return ChatResponse(**payload)
         
         # Record user message in memory
         session.add_user_message(request.query)
@@ -343,8 +346,9 @@ async def chat(request: ChatRequest):
         session.add_assistant_message(answer_text, result.get("query_type", ""))
         
         if result.get("success"):
+            main_text = (result.get("response") or result.get("summary") or "").strip()
             response_data = {
-                "response": result.get("response", ""),
+                "response": main_text,
                 "summary": result.get("summary"),
                 "insight": result.get("insight"),
                 "data": result.get("data"),
