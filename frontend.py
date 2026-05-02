@@ -5,6 +5,8 @@ A simple chat-style interface to interact with the FastAPI backend.
 Designed for demos and interviews - minimal and focused on usability.
 """
 
+import os
+
 import streamlit as st
 import requests
 import json
@@ -65,7 +67,7 @@ class GenAIFrontend:
         except requests.exceptions.ConnectionError:
             return {
                 "success": False,
-                "error": "Cannot connect to backend. Is the server running on http://localhost:8001?"
+                "error": f"Cannot connect to backend at {self.api_url}. Is the API running?",
             }
         except Exception as e:
             return {
@@ -208,8 +210,8 @@ class GenAIFrontend:
         
         # Check backend health
         if not self.check_backend_health():
-            st.error("❌ Backend server is not running! Please start the backend first:")
-            st.code("python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8001")
+            st.error("❌ Backend server is not reachable. Check that the API is running and `BACKEND_URL` is set correctly.")
+            st.code(f"Configured API: {self.api_url}\n\nLocal dev:\npython -m uvicorn src.api.main:app --host 0.0.0.0 --port 8001")
             st.stop()
         
         # Success message
@@ -281,19 +283,20 @@ class GenAIFrontend:
         # Footer
         st.markdown("---")
         st.markdown(
-            """
+            f"""
             <div style='text-align: center; color: #666;'>
-                <p>🚀 GenAI Pre-Sales Assistant | Backend: <code>http://localhost:8001</code></p>
+                <p>🚀 GenAI Pre-Sales Assistant | Backend: <code>{self.api_url}</code></p>
                 <p>Built with ❤️ using Streamlit + FastAPI + RAG + SQL Agents</p>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
 
 def main():
     """Main function to run the Streamlit app"""
-    frontend = GenAIFrontend()
+    api_url = os.environ.get("BACKEND_URL", os.environ.get("API_URL", "http://localhost:8001")).rstrip("/")
+    frontend = GenAIFrontend(api_url=api_url)
     frontend.run()
 
 
