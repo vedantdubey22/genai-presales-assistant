@@ -1,0 +1,27 @@
+# Secrets — never commit
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Logs & local tooling
+logs/
+*.log
+.idea/
+.vscode/
+.DS_Store
+
+# Generated CRM data & vectors (recreate with app / CRM generator)
+data/crm_database.db
+data/raw/*.csv
+models/*.bin
+models/*.pkl
+
+# Unrelated personal files (remove this line if you intend to commit)
+Vanshika_Sharma_resume.tex
